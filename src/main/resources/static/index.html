@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AI 应用中心 | Spring AI 联调</title>
+    <!-- Font Awesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #f5f7fc 0%, #eef2f8 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        /* 整体容器 */
+        .app-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* 头部导航 */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(59,130,246,0.25);
+        }
+        .logo-icon i {
+            font-size: 24px;
+            color: white;
+        }
+        .logo-text h1 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            background: linear-gradient(120deg, #0f172a, #2c3e66);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .logo-text p {
+            font-size: 0.75rem;
+            color: #5b6e8c;
+            margin-top: 2px;
+        }
+        .badge {
+            background: #ffffffcc;
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #1e40af;
+            border: 1px solid rgba(59,130,246,0.3);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .badge i {
+            margin-right: 6px;
+            font-size: 0.75rem;
+        }
+
+        /* 四个卡片网格 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.8rem;
+            margin-top: 1rem;
+        }
+        .ai-card {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            padding: 1.8rem;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .ai-card:hover {
+            transform: translateY(-6px);
+            background: white;
+            box-shadow: 0 25px 35px -12px rgba(0,0,0,0.15);
+            border-color: rgba(59,130,246,0.3);
+        }
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            background: #eff6ff;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            transition: 0.2s;
+        }
+        .ai-card:hover .card-icon {
+            background: #3b82f6;
+        }
+        .card-icon i {
+            font-size: 30px;
+            color: #3b82f6;
+            transition: 0.2s;
+        }
+        .ai-card:hover .card-icon i {
+            color: white;
+        }
+        .card-title {
+            font-size: 1.55rem;
+            font-weight: 600;
+            margin-bottom: 0.65rem;
+            letter-spacing: -0.3px;
+        }
+        .card-desc {
+            color: #475569;
+            line-height: 1.45;
+            font-size: 0.9rem;
+            margin-bottom: 1.2rem;
+        }
+        .card-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #3b82f6;
+            background: #eff6ff;
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+        /* 状态区域 */
+        .info-footer {
+            margin-top: 3.5rem;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.8rem;
+            color: #5b6e8c;
+            border-top: 1px solid #e2e8f0;
+        }
+        @media (max-width: 680px) {
+            .app-container {
+                padding: 1.2rem;
+            }
+            .cards-grid {
+                gap: 1rem;
+            }
+        }
+        .coming-soon-tip {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293bdd;
+            backdrop-filter: blur(12px);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: 0.2s;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="navbar">
+        <div class="logo-area">
+            <div class="logo-icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="logo-text">
+                <h1>AI Hub · 应用中心</h1>
+                <p>Spring AI 联调工作台</p>
+            </div>
+        </div>
+        <div class="badge">
+            <i class="fas fa-code-branch"></i> 本地联调 · 就绪
+        </div>
+    </div>
+
+    <div class="cards-grid">
+        <!-- AI 聊天卡片 -->
+        <div class="ai-card" data-url="chat.html" data-type="chat">
+            <div class="card-icon">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div class="card-title">AI 聊天</div>
+            <div class="card-desc">与智能助手「小团团」自然对话，支持流式输出、多轮记忆、SpringAI 后端无缝对接。</div>
+            <div class="card-tag"><i class="fas fa-arrow-right"></i> 立即体验</div>
+        </div>
+        <!-- 哄哄模拟器 -->
+        <div class="ai-card" data-type="honghong">
+            <div class="card-icon">
+                <i class="fas fa-heart"></i>
+            </div>
+            <div class="card-title">哄哄模拟器</div>
+            <div class="card-desc">帮助练习哄女朋友开心的聊天小游戏，AI 情景模拟，趣味互动。</div>
+            <div class="card-tag"><i class="fas fa-gamepad"></i> 即将开放</div>
+        </div>
+        <!-- 智能客服 -->
+        <div class="ai-card" data-type="service">
+            <div class="card-icon">
+                <i class="fas fa-headset"></i>
+            </div>
+            <div class="card-title">智能客服</div>
+            <div class="card-desc">24小时在线服务，售后/咨询专用 Agent，基于 Spring AI 构建。</div>
+            <div class="card-tag"><i class="fas fa-clock"></i> 开发中</div>
+        </div>
+        <!-- ChatPDF -->
+        <div class="ai-card" data-type="pdf">
+            <div class="card-icon">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <div class="card-title">ChatPDF</div>
+            <div class="card-desc">智能文档阅读与问答系统，上传 PDF 进行对话、摘要、提取知识。</div>
+            <div class="card-tag"><i class="fas fa-brain"></i> 即将上线</div>
+        </div>
+    </div>
+    <div class="info-footer">
+        <i class="fas fa-plug"></i> 后端接口示例：POST /api/chat/stream &nbsp;|&nbsp; 支持跨域 &nbsp;|&nbsp; 对话机器人已集成流式
+    </div>
+</div>
+<div id="toastMsg" class="coming-soon-tip">✨ 功能开发中，敬请期待 ✨</div>
+
+<script>
+    // 卡片点击跳转或提醒
+    const cards = document.querySelectorAll('.ai-card');
+    const toast = document.getElementById('toastMsg');
+    let toastTimer = null;
+
+    function showToast(msg) {
+        if(toastTimer) clearTimeout(toastTimer);
+        toast.style.opacity = '1';
+        toast.innerText = msg || '✨ 功能开发中，敬请期待 ✨';
+        toastTimer = setTimeout(() => {
+            toast.style.opacity = '0';
+        }, 1800);
+    }
+
+    cards.forEach(card => {
+        card.addEventListener('click', (e) => {
+            const type = card.getAttribute('data-type');
+            const url = card.getAttribute('data-url');
+            if (type === 'chat' && url) {
+                // 跳转到聊天页面
+                window.location.href = url;
+            } else {
+                // 其余模块展示占位提示
+                if(type === 'honghong') showToast('💖 哄哄模拟器 · Spring AI 情景模型调试中，稍后来玩～');
+                else if(type === 'service') showToast('🎧 智能客服正在构建，联调后端后可开放');
+                else if(type === 'pdf') showToast('📄 ChatPDF 文档助手 · 即将支持流式问答');
+                else showToast('🔧 功能开发中，请先体验 AI 聊天模块');
+            }
+        });
+    });
+</script>
+</body>
+</html>

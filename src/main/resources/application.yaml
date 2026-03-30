@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: spring-ai-learning
+  ai:
+    deepseek:
+      base-url: http://localhost:11434
+      chat:
+        model: deepseek-r1
