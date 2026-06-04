@@ -63,9 +63,7 @@ public class ChatOrchestratorService {
                 ))
                 .stream()
                 .content()
-                .doOnNext(chunk -> {
-                    fullResponse.append(chunk);
-                })
+                .doOnNext(fullResponse::append)
                 .doOnComplete(() -> {
                     // 流完成后，保存完整的 AI 回复
                     String aiResponse = fullResponse.toString();
