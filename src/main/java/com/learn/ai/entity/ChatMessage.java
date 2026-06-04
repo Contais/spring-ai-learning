@@ -21,8 +21,8 @@ public class ChatMessage {
     /**
      * 会话ID
      */
-    @TableField("session_id")
-    private String sessionId;
+    @TableField("conversation_id")
+    private Long conversationId;
 
     /**
      * 角色 (user/assistant)

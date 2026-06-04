@@ -1,7 +1,6 @@
-
 package com.learn.ai.service;
 
-import com.learn.ai.entity.ChatSession;
+import com.learn.ai.entity.ChatConversation;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +16,7 @@ public class ChatOrchestratorService {
     private ChatClient chatClient;
 
     @Autowired
-    private ChatSessionService sessionService;
+    private ChatConversationService conversationService;
 
     @Autowired
     private ChatMessageService messageService;
@@ -29,21 +28,29 @@ public class ChatOrchestratorService {
     /**
      * 流式发送消息
      */
-    public Flux<String> streamMessage(String sessionId, String userMessage) {
+    public Flux<String> streamMessage(Long conversationId, String userMessage) {
         // 1. 确保会话存在
-        ChatSession session = sessionService.getById(sessionId);
-        if (session == null) {
-            session = sessionService.createSession("新对话", "chat");
-            sessionId = session.getId();
+        if (conversationId == null) {
+            // 处理 conversationId 为 null 的情况（首次对话）
+            ChatConversation newConversation = conversationService.createConversation("新对话", "chat");
+            conversationId = newConversation.getId();
+        } else {
+            // 检查会话是否存在
+            ChatConversation conversation = conversationService.getById(conversationId);
+            if (conversation == null) {
+                // 会话不存在，创建新会话
+                ChatConversation newConversation = conversationService.createConversation("新对话", "chat");
+                conversationId = newConversation.getId();
+            }
         }
         // 使用 final 变量供 lambda 表达式使用
-        final String finalSessionId = sessionId;
+        final Long finalConversationId = conversationId;
 
         // 2. 保存用户消息
-        messageService.saveUserMessage(sessionId, userMessage);
+        messageService.saveUserMessage(conversationId, userMessage);
 
         // 3. 更新会话时间
-        sessionService.touchSession(sessionId);
+        conversationService.touchConversation(conversationId);
 
         // 4. 流式调用 AI
         StringBuilder fullResponse = new StringBuilder();
@@ -52,7 +59,7 @@ public class ChatOrchestratorService {
                 .user(userMessage)
                 .advisors(advice -> advice.param(
                         ChatMemory.CONVERSATION_ID,
-                        finalSessionId
+                        finalConversationId.toString()
                 ))
                 .stream()
                 .content()
@@ -62,16 +69,16 @@ public class ChatOrchestratorService {
                 .doOnComplete(() -> {
                     // 流完成后，保存完整的 AI 回复
                     String aiResponse = fullResponse.toString();
-                    messageService.saveAssistantMessage(finalSessionId, aiResponse);
+                    messageService.saveAssistantMessage(finalConversationId, aiResponse);
 
                     // 如果是第一次对话，生成标题
-                    if (messageService.countBySessionId(finalSessionId) == 2) {
+                    if (messageService.countBySessionId(finalConversationId) == 2) {
                         String autoTitle = generateTitle(userMessage);
-                        sessionService.updateSessionTitle(finalSessionId, autoTitle);
+                        conversationService.updateConversationTitle(finalConversationId, autoTitle);
                     }
 
                     // 再次更新时间
-                    sessionService.touchSession(finalSessionId);
+                    conversationService.touchConversation(finalConversationId);
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
@@ -80,10 +87,10 @@ public class ChatOrchestratorService {
      * 删除会话
      */
     @Transactional
-    public void deleteSession(String sessionId) {
-        messageService.removeBySessionId(sessionId);
-        sessionService.removeById(sessionId);
-        chatMemory.clear(sessionId);
+    public void deleteSession(Long conversationId) {
+        messageService.removeBySessionId(conversationId);
+        conversationService.removeById(conversationId);
+        chatMemory.clear(conversationId.toString());
     }
 
     private String generateTitle(String firstMessage) {
