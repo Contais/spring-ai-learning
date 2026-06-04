@@ -3,6 +3,7 @@ package com.learn.ai.controller;
 import com.learn.ai.entity.ChatMessage;
 import com.learn.ai.entity.ChatSession;
 //import com.learn.ai.service.ChatOrchestratorService;
+import com.learn.ai.service.ChatOrchestratorService;
 import com.learn.ai.service.ChatSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -23,9 +24,29 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChatController {
 
-//    private final ChatOrchestratorService chatOrchestratorService;
+    private final ChatOrchestratorService chatOrchestratorService;
     private final ChatClient chatClient;
     private final ChatSessionService chatSessionService;
+
+    /**
+     * 流式聊天接口（demo）
+     *
+     * @param prompt 用户的提问内容
+     * @param chatId 会话ID，可选。如果为空则使用 "default"
+     * @return 响应内容的流 (SSE)
+     */
+    @PostMapping(value = "/chat/demo", produces = "text/html;charset=UTF-8")
+    public Flux<String> demoChat(@RequestParam("prompt") String prompt,
+                                   @RequestParam(value = "chatId", required = false) String chatId) {
+        String sessionId = chatId != null ? chatId : "default";
+
+        return chatClient.prompt()
+                .user(prompt)
+                .advisors(advice -> advice.param(ChatMemory.CONVERSATION_ID, sessionId))
+                .stream()
+                .content();
+    }
+
 
     /**
      * 流式聊天接口
@@ -38,14 +59,7 @@ public class ChatController {
     public Flux<String> streamChat(@RequestParam("prompt") String prompt,
                                    @RequestParam(value = "chatId", required = false) String chatId) {
         String sessionId = chatId != null ? chatId : "default";
-
-        chatSessionService.touchSession(sessionId);
-        
-        return chatClient.prompt()
-                .user(prompt)
-                .advisors(advice -> advice.param(ChatMemory.CONVERSATION_ID, sessionId))
-                .stream()
-                .content();
+        return chatOrchestratorService.streamMessage(sessionId, prompt);
     }
 
     /**
