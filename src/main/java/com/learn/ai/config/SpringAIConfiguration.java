@@ -1,11 +1,13 @@
 package com.learn.ai.config;
 
 
+import com.learn.ai.constant.SystemConstants;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -29,6 +31,18 @@ public class SpringAIConfiguration {
     }
 
     /**
+     * 聊天记忆（使用内存记忆）
+     */
+    @Bean
+    public ChatMemory inMemoryChatMemory() {
+        return MessageWindowChatMemory.builder()
+                .chatMemoryRepository(new InMemoryChatMemoryRepository())
+                .maxMessages(20)
+                .build();
+    }
+
+
+    /**
      * 聊天记忆（使用数据库存储）
      */
     @Bean
@@ -50,6 +64,21 @@ public class SpringAIConfiguration {
                 .defaultAdvisors(
                         new SimpleLoggerAdvisor(),
                         MessageChatMemoryAdvisor.builder(chatMemory).build()
+                )
+                .build();
+    }
+
+    /**
+     * GameChatClient
+     */
+    @Bean
+    public ChatClient gameChatClient(DeepSeekChatModel model, ChatMemory inMemoryChatMemory) {
+        return ChatClient.builder(model)
+                .defaultOptions(ChatOptions.builder().model("deepseek-reasoner").build())
+                .defaultSystem(SystemConstants.GAME_SYSTEM_PROMPT)
+                .defaultAdvisors(
+                        new SimpleLoggerAdvisor(),
+                        MessageChatMemoryAdvisor.builder(inMemoryChatMemory).build()
                 )
                 .build();
     }
