@@ -1,9 +1,12 @@
 package com.learn.ai.enums;
 
+import lombok.Getter;
+
 /**
  * 聊天场景枚举
  * 用于路由到不同的 ChatClient，并标识会话类型
  */
+@Getter
 public enum ChatScene {
 
     DEFAULT("chatClient", "chatMemory", "default", true),
@@ -20,22 +23,6 @@ public enum ChatScene {
         this.chatMemoryBeanName = chatMemoryBeanName;
         this.conversationType = conversationType;
         this.persistMessages = persistMessages;
-    }
-
-    public String getClientBeanName() {
-        return clientBeanName;
-    }
-
-    public String getChatMemoryBeanName() {
-        return chatMemoryBeanName;
-    }
-
-    public String getConversationType() {
-        return conversationType;
-    }
-
-    public boolean isPersistMessages() {
-        return persistMessages;
     }
 
     public static ChatScene fromConversationType(String conversationType) {
