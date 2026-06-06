@@ -11,14 +11,14 @@ import reactor.core.publisher.Flux;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/game")
-public class GameController {
+@RequestMapping("/customerService")
+public class CustomerServiceController {
 
     private final ChatOrchestratorService chatOrchestratorService;
 
     @PostMapping(value = "/chat", produces = "text/html;charset=UTF-8")
     public Flux<String> streamChatOrchestrated(@RequestParam("prompt") String prompt,
                                                @RequestParam("conversationId") Long conversationId) {
-        return chatOrchestratorService.streamMessage(ChatScene.GAME, conversationId, prompt);
+        return chatOrchestratorService.streamMessage(ChatScene.CUSTOMER_SERVICE, conversationId, prompt);
     }
 }

@@ -1,62 +1,55 @@
 package com.learn.ai.service;
 
 import com.learn.ai.entity.ChatConversation;
+import com.learn.ai.enums.ChatScene;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.Objects;
+
 @Service
+@RequiredArgsConstructor
 public class ChatOrchestratorService {
 
-    @Autowired
-    private ChatClient chatClient;
-
-    @Autowired
-    private ChatConversationService conversationService;
-
-    @Autowired
-    private ChatMessageService messageService;
-
-    @Autowired
-    private ChatMemory chatMemory;
+    private final ChatClientRouter chatClientRouter;
+    private final ChatConversationService conversationService;
+    private final ChatMessageService messageService;
 
 
     /**
      * 流式发送消息
      */
-    public Flux<String> streamMessage(Long conversationId, String userMessage) {
-        // 1. 确保会话存在
-        if (conversationId == null) {
-            // 处理 conversationId 为 null 的情况（首次对话）
-            ChatConversation newConversation = conversationService.createConversation("新对话", "chat");
-            conversationId = newConversation.getId();
-        } else {
-            // 检查会话是否存在
-            ChatConversation conversation = conversationService.getById(conversationId);
-            if (conversation == null) {
-                // 会话不存在，创建新会话
-                ChatConversation newConversation = conversationService.createConversation("新对话", "chat");
-                conversationId = newConversation.getId();
-            }
+    public Flux<String> streamMessage(ChatScene scene, Long conversationId, String userMessage) {
+        // 1. 参数校验与路由
+        ChatScene resolvedScene = Objects.requireNonNull(scene, "scene must not be null");
+        String prompt = Objects.requireNonNull(userMessage, "userMessage must not be null");
+        ChatClient chatClient = chatClientRouter.getClient(resolvedScene);
+
+        // 2. 持久化场景：确保 DB 会话存在
+        if (resolvedScene.isPersistMessages()) {
+            conversationId = ensureConversation(resolvedScene, conversationId);
         }
+
         // 使用 final 变量供 lambda 表达式使用
         final Long finalConversationId = conversationId;
+        final boolean persist = resolvedScene.isPersistMessages();
 
-        // 2. 保存用户消息
-        messageService.saveUserMessage(conversationId, userMessage);
+        // 2. 持久化场景：保存用户消息并更新会话时间
+        if (persist) {
+            messageService.saveUserMessage(conversationId, userMessage);
+            conversationService.touchConversation(conversationId);
+        }
 
-        // 3. 更新会话时间
-        conversationService.touchConversation(conversationId);
-
-        // 4. 流式调用 AI
+        // 3. 流式调用 AI
         StringBuilder fullResponse = new StringBuilder();
 
         return chatClient.prompt()
-                .user(userMessage)
+                .user(prompt)
                 .advisors(advice -> advice.param(
                         ChatMemory.CONVERSATION_ID,
                         finalConversationId.toString()
@@ -65,18 +58,20 @@ public class ChatOrchestratorService {
                 .content()
                 .doOnNext(fullResponse::append)
                 .doOnComplete(() -> {
-                    // 流完成后，保存完整的 AI 回复
-                    String aiResponse = fullResponse.toString();
-                    messageService.saveAssistantMessage(finalConversationId, aiResponse);
+                    // 持久化场景：保存 AI 回复并更新会话
+                    if (persist) {
+                        String aiResponse = fullResponse.toString();
+                        messageService.saveAssistantMessage(finalConversationId, aiResponse);
 
-                    // 如果是第一次对话，生成标题
-                    if (messageService.countBySessionId(finalConversationId) == 2) {
-                        String autoTitle = generateTitle(userMessage);
-                        conversationService.updateConversationTitle(finalConversationId, autoTitle);
+                        // 如果是第一次对话，生成标题
+                        if (messageService.countBySessionId(finalConversationId) == 2) {
+                            String autoTitle = generateTitle(prompt);
+                            conversationService.updateConversationTitle(finalConversationId, autoTitle);
+                        }
+
+                        // 再次更新时间
+                        conversationService.touchConversation(finalConversationId);
                     }
-
-                    // 再次更新时间
-                    conversationService.touchConversation(finalConversationId);
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
@@ -86,9 +81,34 @@ public class ChatOrchestratorService {
      */
     @Transactional
     public void deleteSession(Long conversationId) {
-        messageService.removeBySessionId(conversationId);
-        conversationService.removeById(conversationId);
-        chatMemory.clear(conversationId.toString());
+        Long targetConversationId = Objects.requireNonNull(conversationId, "conversationId must not be null");
+        ChatConversation conversation = conversationService.getById(targetConversationId);
+        if (conversation == null) {
+            return;
+        }
+        ChatScene scene = ChatScene.fromConversationType(conversation.getSessionType());
+        ChatMemory chatMemory = chatClientRouter.getChatMemory(scene);
+
+        messageService.removeBySessionId(targetConversationId);
+        conversationService.removeById(targetConversationId);
+        chatMemory.clear(targetConversationId.toString());
+    }
+
+    private Long ensureConversation(ChatScene scene, Long conversationId) {
+        if (conversationId == null) {
+            ChatConversation newConversation =
+                    conversationService.createConversation("新对话", scene.getConversationType());
+            return newConversation.getId();
+        }
+
+        ChatConversation conversation = conversationService.getById(conversationId);
+        if (conversation == null) {
+            ChatConversation newConversation =
+                    conversationService.createConversation("新对话", scene.getConversationType());
+            return newConversation.getId();
+        }
+
+        return conversationId;
     }
 
     private String generateTitle(String firstMessage) {

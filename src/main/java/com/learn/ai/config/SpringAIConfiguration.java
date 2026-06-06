@@ -1,7 +1,7 @@
 package com.learn.ai.config;
 
 
-import com.learn.ai.constant.SystemConstants;
+import com.learn.ai.tools.CourseTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -12,13 +12,23 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
+
+import java.nio.charset.StandardCharsets;
 
 import javax.sql.DataSource;
 
 @Configuration
 public class SpringAIConfiguration {
+
+    @Value("classpath:prompts/game-system-prompt.md")
+    private Resource gameSystemPrompt;
+
+    @Value("classpath:prompts/customer-service-system-prompt.md")
+    private Resource customerServiceSystemPrompt;
 
     /**
      * 基于数据库的聊天记忆仓库
@@ -72,14 +82,30 @@ public class SpringAIConfiguration {
      * GameChatClient
      */
     @Bean
-    public ChatClient gameChatClient(DeepSeekChatModel model, ChatMemory inMemoryChatMemory) {
+    public ChatClient gameChatClient(DeepSeekChatModel model, ChatMemory inMemoryChatMemory) throws Exception {
         return ChatClient.builder(model)
                 .defaultOptions(ChatOptions.builder().model("deepseek-reasoner").build())
-                .defaultSystem(SystemConstants.GAME_SYSTEM_PROMPT)
+                .defaultSystem(gameSystemPrompt.getContentAsString(StandardCharsets.UTF_8))
                 .defaultAdvisors(
                         new SimpleLoggerAdvisor(),
                         MessageChatMemoryAdvisor.builder(inMemoryChatMemory).build()
                 )
                 .build();
     }
+
+    /**
+     * CustomerServiceChatClient
+     */
+    @Bean
+    public ChatClient customerServiceChatClient(DeepSeekChatModel model, ChatMemory chatMemory, CourseTools courseTools) throws Exception {
+        return ChatClient.builder(model)
+                .defaultSystem(customerServiceSystemPrompt.getContentAsString(StandardCharsets.UTF_8))
+                .defaultAdvisors(
+                        new SimpleLoggerAdvisor(),
+                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                )
+                .defaultTools(courseTools)
+                .build();
+    }
+
 }

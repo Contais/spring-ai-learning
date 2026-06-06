@@ -7,7 +7,7 @@ import com.learn.ai.entity.ChatMessage;
 import com.learn.ai.entity.ChatConversation;
 import com.learn.ai.mapper.ChatMessageMapper;
 import com.learn.ai.mapper.ChatConversationMapper;
-import com.learn.ai.vo.MessageVO;
+import com.learn.ai.model.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

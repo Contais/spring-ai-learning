@@ -2,6 +2,7 @@ package com.learn.ai.controller;
 
 import com.learn.ai.entity.ChatMessage;
 import com.learn.ai.entity.ChatConversation;
+import com.learn.ai.enums.ChatScene;
 import com.learn.ai.service.ChatOrchestratorService;
 import com.learn.ai.service.ChatConversationService;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +56,7 @@ public class ChatController {
     @PostMapping(value = "/chat/orchestrated", produces = "text/html;charset=UTF-8")
     public Flux<String> streamChatOrchestrated(@RequestParam("prompt") String prompt,
                                                @RequestParam(value = "conversationId", required = false) Long conversationId) {
-        return chatOrchestratorService.streamMessage(conversationId, prompt);
+        return chatOrchestratorService.streamMessage(ChatScene.DEFAULT, conversationId, prompt);
     }
 
     /**
