@@ -44,7 +44,11 @@ public class CourseTools {
     }
 
     @Tool(description = "生成课程预约单,并返回生成的预约单号")
-    public String generateCourseReservation(String courseName, String studentName, String contactInfo, String school, String remark) {
+    public String generateCourseReservation(@ToolParam(description = "课程名称") String courseName,
+                                            @ToolParam(description = "学生姓名") String studentName,
+                                            @ToolParam(description = "联系方式") String contactInfo,
+                                            @ToolParam(description = "校区名称") String school,
+                                            @ToolParam(required = false, description = "备注") String remark) {
         CourseReservation courseReservation = new CourseReservation();
         courseReservation.setCourse(courseName);
         courseReservation.setStudentName(studentName);

@@ -12,12 +12,17 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.vectorstore.SimpleVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Vector;
 
 import javax.sql.DataSource;
 
@@ -106,6 +111,11 @@ public class SpringAIConfiguration {
                 )
                 .defaultTools(courseTools)
                 .build();
+    }
+
+    @Bean
+    public VectorStore vectorStore(OpenAiEmbeddingModel model) {
+        return SimpleVectorStore.builder(model).build();
     }
 
 }
