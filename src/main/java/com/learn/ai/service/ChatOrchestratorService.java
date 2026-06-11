@@ -4,6 +4,7 @@ import com.learn.ai.entity.ChatConversation;
 import com.learn.ai.enums.ChatScene;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,12 +49,14 @@ public class ChatOrchestratorService {
         // 3. 流式调用 AI
         StringBuilder fullResponse = new StringBuilder();
 
-        return chatClient.prompt()
+        var chatClientSpec = chatClient.prompt()
                 .user(prompt)
-                .advisors(advice -> advice.param(
-                        ChatMemory.CONVERSATION_ID,
-                        finalConversationId.toString()
-                ))
+                .advisors(advice -> advice.param(ChatMemory.CONVERSATION_ID, finalConversationId.toString()));
+        // 如果是pdf场景 再添加过滤表达式的 advisor
+        if (resolvedScene == ChatScene.PDF) {
+            chatClientSpec.advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "conversation_id == '" + finalConversationId.toString() + "'"));
+        }
+        return chatClientSpec
                 .stream()
                 .content()
                 .doOnNext(fullResponse::append)

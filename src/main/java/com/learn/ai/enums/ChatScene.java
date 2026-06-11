@@ -11,7 +11,8 @@ public enum ChatScene {
 
     DEFAULT("chatClient", "chatMemory", "default", true),
     GAME("gameChatClient", "inMemoryChatMemory", "game", false),
-    CUSTOMER_SERVICE("customerServiceChatClient", "chatMemory", "customer_service", true);
+    CUSTOMER_SERVICE("customerServiceChatClient", "chatMemory", "customer_service", true),
+    PDF("pdfChatClient", "chatMemory", "pdf", true);
 
     private final String clientBeanName;
     private final String chatMemoryBeanName;

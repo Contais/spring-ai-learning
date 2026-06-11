@@ -66,7 +66,7 @@ class SpringAiLearningApplicationTests {
 
     @Test
     void testVectorStore() {
-        FileSystemResource resource = new FileSystemResource("data/test/Java开发手册(黄山版).pdf");
+        FileSystemResource resource = new FileSystemResource("data/test/13003 数据结构与算法.pdf");
         PagePdfDocumentReader reader = new PagePdfDocumentReader(
                 resource,
                 PdfDocumentReaderConfig.builder()
@@ -75,13 +75,14 @@ class SpringAiLearningApplicationTests {
                         .build()
         );
         List<Document> documents = reader.read();
+        documents.forEach(doc -> doc.getMetadata().put("conversation_id", "650019"));
         vectorStore.add(documents);
 
         SearchRequest request = SearchRequest.builder()
                 .query("接口和实现类的命名规则")
                 .topK(5)
                 .similarityThreshold(0.6f)
-                .filterExpression("file_name == 'Java开发手册(黄山版).pdf'")
+                .filterExpression("conversation_id == '650019'")
                 .build();
         List<Document> searchDocuments = vectorStore.similaritySearch(request);
         if (searchDocuments.isEmpty()) {
@@ -89,9 +90,11 @@ class SpringAiLearningApplicationTests {
             return;
         }
         for (Document document : searchDocuments) {
-            System.out.println(document.getId());
-            System.out.println(document.getScore());
-            System.out.println(document.getText());
+            System.out.println("ID: " + document.getId());
+            System.out.println("Score: " + document.getScore());
+            System.out.println("Metadata: " + document.getMetadata());
+            System.out.println("Text: " + document.getText());
+            System.out.println("---");
         }
 
     }

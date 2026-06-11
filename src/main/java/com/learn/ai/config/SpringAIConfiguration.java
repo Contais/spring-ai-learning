@@ -5,6 +5,7 @@ import com.learn.ai.tools.CourseTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
@@ -12,8 +13,8 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,10 +22,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Vector;
-
 import javax.sql.DataSource;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class SpringAIConfiguration {
@@ -110,6 +109,29 @@ public class SpringAIConfiguration {
                         MessageChatMemoryAdvisor.builder(chatMemory).build()
                 )
                 .defaultTools(courseTools)
+                .build();
+    }
+
+
+    /**
+     * pdfChatClient
+     */
+    @Bean
+    public ChatClient pdfChatClient(DeepSeekChatModel model, ChatMemory chatMemory, VectorStore vectorStore) {
+        return ChatClient.builder(model)
+//                .defaultSystem(customerServiceSystemPrompt.getContentAsString(StandardCharsets.UTF_8))
+                .defaultAdvisors(
+                        new SimpleLoggerAdvisor(),
+                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                        QuestionAnswerAdvisor
+                                .builder(vectorStore)
+                                .searchRequest(
+                                        SearchRequest.builder()
+                                                .similarityThreshold(0.5d)  // 相似度阈值
+                                                .topK(2) // 返回的文档片段数量
+                                                .build()
+                                ).build()
+                )
                 .build();
     }
 
