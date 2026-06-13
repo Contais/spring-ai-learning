@@ -30,7 +30,7 @@ public class PdfController {
      * 文件上传
      */
     @RequestMapping("/file/upload/{conversationId}")
-    public Result uploadPdf(@PathVariable("conversationId") String conversationId, @RequestParam("file") MultipartFile file) {
+    public Result<Void> uploadPdf(@PathVariable("conversationId") String conversationId, @RequestParam("file") MultipartFile file) {
         try {
             // 1. 校验文件是否为PDF格式
             if (!Objects.equals(file.getContentType(), "application/pdf")) {
@@ -51,7 +51,7 @@ public class PdfController {
     /**
      * 文件下载
      */
-    @GetMapping("/file/{chatId}")
+    @GetMapping("/file/{conversationId}")
     public ResponseEntity<Resource> download(@PathVariable("conversationId") String conversationId) {
         // 1.读取文件
         Resource resource = fileService.getFile(conversationId);

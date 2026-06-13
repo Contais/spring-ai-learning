@@ -5,20 +5,31 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class Result {
+public class Result<T> {
     private Integer ok;
     private String msg;
+    private T data;
 
     private Result(Integer ok, String msg) {
         this.ok = ok;
         this.msg = msg;
     }
 
-    public static Result ok() {
-        return new Result(1, "ok");
+    private Result(Integer ok, String msg, T data) {
+        this.ok = ok;
+        this.msg = msg;
+        this.data = data;
     }
 
-    public static Result fail(String msg) {
-        return new Result(0, msg);
+    public static <T> Result<T> ok() {
+        return new Result<>(1, "ok");
+    }
+
+    public static <T> Result<T> ok(T data) {
+        return new Result<>(1, "ok", data);
+    }
+
+    public static <T> Result<T> fail(String msg) {
+        return new Result<>(0, msg);
     }
 }
